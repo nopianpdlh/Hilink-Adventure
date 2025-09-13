@@ -4,15 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PropsWithChildren } from "react";
-import { Home, Map, Package, Users, BarChart, TicketPercent, FileText, Backpack } from 'lucide-react';
+import { Home, Map, Package, Users, BarChart, TicketPercent, FileText, Backpack, UserCheck, ShoppingCart } from 'lucide-react';
 
-const iconMap = { Home, Map, Package, Users, BarChart, TicketPercent, FileText, Backpack };
+const iconMap = { Home, Map, Package, Users, BarChart, TicketPercent, FileText, Backpack, UserCheck, ShoppingCart };
 
 const navLinks = [
     { href: "/admin", text: "Dashboard", icon: "Home" as keyof typeof iconMap },
+    { href: "/admin/users", text: "Kelola User", icon: "UserCheck" as keyof typeof iconMap },
     { href: "/admin/destinations", text: "Destinasi", icon: "Map" as keyof typeof iconMap },
     { href: "/admin/trips", text: "Paket Trip", icon: "Package" as keyof typeof iconMap },
-    { href: "/admin/bookings", text: "Pesanan", icon: "Users" as keyof typeof iconMap },
+    { href: "/admin/bookings", text: "Pesanan", icon: "ShoppingCart" as keyof typeof iconMap },
     { href: "/admin/promotions", text: "Promosi", icon: "TicketPercent" as keyof typeof iconMap }, 
     { href: "/admin/blog", text: "Blog", icon: "FileText" as keyof typeof iconMap }, 
     { href: "/admin/equipment", text: "Peralatan", icon: "Backpack" as keyof typeof iconMap },

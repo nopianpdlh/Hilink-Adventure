@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { v4 as uuidv4 } from 'uuid'
 
 export async function uploadImageToSupabase(file: File): Promise<string> {
   // Validate file size (5MB max)
@@ -16,9 +15,11 @@ export async function uploadImageToSupabase(file: File): Promise<string> {
 
   const supabase = createAdminClient()
   
-  // Generate unique filename
+  // Generate unique filename using timestamp and random number
   const fileExt = file.name.split('.').pop()
-  const fileName = `${uuidv4()}.${fileExt}`
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 15)
+  const fileName = `${timestamp}_${random}.${fileExt}`
   const filePath = `trips/${fileName}`
 
   try {
