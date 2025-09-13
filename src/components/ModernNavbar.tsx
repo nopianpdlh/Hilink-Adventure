@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,82 +18,24 @@ import {
 import { 
   Menu, 
   X, 
-  Mountain, 
   Backpack, 
   User, 
   Settings, 
   LogOut, 
   Calendar,
   Camera,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
-interface User {
-  id: string
-  email?: string
-  user_metadata?: {
-    full_name?: string
-    avatar_url?: string
-  }
-}
-
-interface Profile {
-  full_name: string | null
-  role: string | null
-  avatar_url: string | null
-}
-
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { user, profile, loading, signOut } = useAuth()
+  const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
-    const supabase = createClient()
-    
-    // Get initial user
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        // Get user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, role, avatar_url')
-          .eq('id', user.id)
-          .single()
-        
-        setProfile(profile)
-      }
-    }
-    
-    getUser()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user)
-          
-          // Get user profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, role, avatar_url')
-            .eq('id', session.user.id)
-            .single()
-          
-          setProfile(profile)
-        } else {
-          setUser(null)
-          setProfile(null)
-        }
-      }
-    )
-
     // Handle scroll effect
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -101,16 +44,34 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll)
     
     return () => {
-      subscription.unsubscribe()
       window.removeEventListener('scroll', handleScroll)
     }
   }, [])
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
+    try {
+      // Show logout message first
+      toast.success('Logging out...', {
+        duration: 1000,
+      })
+      
+      // Small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      await signOut()
+      
+      // Success message will show after redirect
+      setTimeout(() => {
+        toast.success('Logout berhasil! Sampai jumpa lagi.', {
+          duration: 3000,
+        })
+      }, 100)
+      
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat logout. Silakan coba lagi.', {
+        duration: 3000,
+      })
+    }
   }
 
   const getUserInitials = () => {
@@ -126,7 +87,7 @@ export default function Navbar() {
   }
 
   const navItems = [
-    { href: '/', label: 'Beranda', icon: Mountain },
+    { href: '/', label: 'Beranda', icon: Home },
     { href: '/trips', label: 'Open Trip', icon: Calendar },
     { href: '/equipment', label: 'Sewa Alat', icon: Backpack },
     { href: '/blog', label: 'Blog', icon: Camera },
@@ -160,7 +121,7 @@ export default function Navbar() {
             href="/" 
             className="flex items-center space-x-2 text-xl font-bold text-gray-900 hover:text-green-600 transition-colors"
           >
-            <Mountain className="h-8 w-8 text-green-600" />
+            <img src="/camp.svg" alt="HiLink Adventure" className="h-8 w-8" />
             <span>
               <span className="text-green-600">HiLink</span> Adventure
             </span>
@@ -182,7 +143,11 @@ export default function Navbar() {
 
           {/* User Menu / Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -262,7 +227,17 @@ export default function Navbar() {
                   </div>
 
                   {/* Mobile User Section */}
-                  {user ? (
+                  {loading ? (
+                    <div className="border-t pt-6">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="w-32 h-3 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : user ? (
                     <div className="border-t pt-6">
                       <div className="flex items-center space-x-3 mb-4">
                         <Avatar className="h-10 w-10">

@@ -21,17 +21,7 @@ create table public.destinations (
   constraint destinations_pkey primary key (id)
 ) TABLESPACE pg_default;
 
-create table public.equipment (
-  id uuid not null default gen_random_uuid (),
-  name text not null,
-  description text null,
-  rental_price_per_day integer not null,
-  stock integer not null default 0,
-  image_url text null,
-  created_at timestamp with time zone not null default now(),
-  constraint equipment_pkey primary key (id),
-  constraint equipment_rental_price_per_day_check check ((rental_price_per_day >= 0))
-) TABLESPACE pg_default;
+
 
 create table public.profiles (
   id uuid not null,
@@ -101,12 +91,19 @@ create table public.equipment (
   name text not null,
   description text null,
   rental_price_per_day integer not null,
-  stock integer not null default 0,
+  stock_quantity integer not null default 0,
   image_url text null,
   created_at timestamp with time zone not null default now(),
+  price_per_day numeric(10, 2) null,
+  category character varying(100) null,
+  updated_at timestamp with time zone null default now(),
   constraint equipment_pkey primary key (id),
   constraint equipment_rental_price_per_day_check check ((rental_price_per_day >= 0))
 ) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_category on public.equipment using btree (category) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_stock_quantity on public.equipment using btree (stock_quantity) TABLESPACE pg_default;
 
 
 

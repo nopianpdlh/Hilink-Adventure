@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import ModernNavbar from '@/components/ModernNavbar'
 import { 
-  Mountain, 
   Backpack, 
   Users, 
   Calendar, 
@@ -43,55 +42,92 @@ function HeroSection() {
   return (
     <section className="relative bg-gradient-to-br from-green-50 via-white to-green-50 pt-24 pb-16 overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-green-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
-      </div>
+      <div 
+        className="absolute inset-0 opacity-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/hero-bg.svg)' }}
+      ></div>
       
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Jelajahi <span className="text-green-600">Petualangan</span>
-            <br />
-            Impianmu Bersama Kami
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Bergabunglah dengan open trip terbaik dan sewa peralatan berkualitas untuk pengalaman outdoor yang tak terlupakan
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" asChild className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6">
-              <Link href="/trips">
-                <Calendar className="mr-2 h-5 w-5" />
-                Lihat Open Trip
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6 border-green-200 hover:bg-green-50">
-              <Link href="/equipment">
-                <Backpack className="mr-2 h-5 w-5" />
-                Sewa Peralatan
-              </Link>
-            </Button>
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
+                Jelajahi <span className="text-green-600">Petualangan</span>
+                <br />
+                Impianmu Bersama Kami
+              </h1>
+              <p className="text-xl text-gray-600 leading-relaxed max-w-md">
+                Bergabunglah dengan open trip terbaik dan sewa peralatan berkualitas untuk pengalaman outdoor yang tak terlupakan
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" asChild className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6">
+                <Link href="/trips">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Lihat Open Trip
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6 border-green-200 hover:bg-green-50">
+                <Link href="/equipment">
+                  <Backpack className="mr-2 h-5 w-5" />
+                  Sewa Peralatan
+                </Link>
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">500+</div>
+                <div className="text-sm text-gray-600">Trip Sukses</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">2000+</div>
+                <div className="text-sm text-gray-600">Petualang</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">50+</div>
+                <div className="text-sm text-gray-600">Destinasi</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">100+</div>
+                <div className="text-sm text-gray-600">Peralatan</div>
+              </div>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">500+</div>
-              <div className="text-sm text-gray-600">Trip Sukses</div>
+          {/* Right Content - Hero Image */}
+          <div className="relative">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img 
+                src="/hero.png" 
+                alt="Adventure Hero" 
+                className="w-full h-[500px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">2000+</div>
-              <div className="text-sm text-gray-600">Petualang</div>
+            
+            {/* Floating Cards */}
+            <div className="absolute -top-4 -left-4 bg-white rounded-lg shadow-lg p-4 border">
+              <div className="flex items-center gap-3">
+                <img src="/camp.svg" alt="Camp" className="w-10 h-10" />
+                <div>
+                  <div className="font-semibold text-sm">Camping Trip</div>
+                  <div className="text-xs text-gray-500">3D2N Adventure</div>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">50+</div>
-              <div className="text-sm text-gray-600">Destinasi</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">100+</div>
-              <div className="text-sm text-gray-600">Peralatan</div>
+            
+            <div className="absolute -bottom-4 -right-4 bg-white rounded-lg shadow-lg p-4 border">
+              <div className="flex items-center gap-3">
+                <img src="/user.svg" alt="Users" className="w-10 h-10" />
+                <div>
+                  <div className="font-semibold text-sm">12 Orang</div>
+                  <div className="text-xs text-gray-500">Bergabung hari ini</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -104,22 +140,22 @@ function HeroSection() {
 function FeaturesSection() {
   const features = [
     {
-      icon: Shield,
-      title: "Aman & Terpercaya",
+      icon: "/camp.svg",
+      title: "Aman & Terpercaya", 
       description: "Pemandu berpengalaman dan peralatan berkualitas tinggi untuk keamanan maksimal"
     },
     {
-      icon: Users,
+      icon: "/user.svg",
       title: "Komunitas Aktif",
       description: "Bergabung dengan ribuan petualang dan bangun koneksi yang bermakna"
     },
     {
-      icon: Award,
+      icon: "/location.svg",
       title: "Pengalaman Terbaik",
       description: "Destinasi pilihan dan itinerary yang dirancang khusus untuk pengalaman optimal"
     },
     {
-      icon: Clock,
+      icon: "/calendar.svg",
       title: "Fleksibel",
       description: "Berbagai pilihan trip dan rental yang sesuai dengan jadwal dan budget Anda"
     }
@@ -142,14 +178,12 @@ function FeaturesSection() {
             <Card key={index} className="border-none shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <feature.icon className="h-8 w-8 text-green-600" />
+                  <img src={feature.icon} alt={feature.title} className="w-8 h-8" />
                 </div>
                 <CardTitle className="text-xl">{feature.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center text-gray-600">
-                  {feature.description}
-                </CardDescription>
+                <p className="text-gray-600 text-center">{feature.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -182,13 +216,19 @@ function TripCard({ trip }: { trip: Trip }) {
       <div className="relative overflow-hidden">
         <img 
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" 
-          src={trip.image_url || 'https://placehold.co/600x400/22c55e/ffffff?text=HiLink+Adventure'} 
+          src={trip.image_url || '/img-1.png'} 
           alt={trip.title} 
         />
         <div className="absolute top-4 right-4">
           <Badge className="bg-green-600 hover:bg-green-700">
-            <Calendar className="w-3 h-3 mr-1" />
+            <img src="/calendar.svg" alt="Calendar" className="w-3 h-3 mr-1" />
             {formatDate(trip.start_date)}
+          </Badge>
+        </div>
+        <div className="absolute top-4 left-4">
+          <Badge variant="secondary" className="bg-white/90 text-gray-700">
+            <img src="/location.svg" alt="Location" className="w-3 h-3 mr-1" />
+            {Array.isArray(trip.destination) ? trip.destination[0]?.name : trip.destination?.name}
           </Badge>
         </div>
       </div>
@@ -198,7 +238,7 @@ function TripCard({ trip }: { trip: Trip }) {
           {trip.title}
         </CardTitle>
         <CardDescription className="flex items-center text-gray-600">
-          <MapPin className="w-4 h-4 mr-1" />
+          <img src="/location.svg" alt="Location" className="w-4 h-4 mr-1" />
           {Array.isArray(trip.destination) 
             ? trip.destination[0]?.name 
             : trip.destination?.name || 'Destinasi Menarik'
@@ -209,7 +249,7 @@ function TripCard({ trip }: { trip: Trip }) {
       <CardContent>
         <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
           <div className="flex items-center">
-            <Users className="w-4 h-4 mr-1" />
+            <img src="/user.svg" alt="Users" className="w-4 h-4 mr-1" />
             <span>Kuota: {trip.quota} orang</span>
           </div>
           <div className="flex items-center">
@@ -277,8 +317,12 @@ export default async function HomePage() {
       <FeaturesSection />
       
       {/* Featured Trips Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 bg-gray-50 relative">
+        <div 
+          className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/pattern-bg.png)' }}
+        ></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Open Trip Populer
@@ -307,7 +351,7 @@ export default async function HomePage() {
             </>
           ) : (
             <div className="text-center py-12">
-              <Mountain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <img src="/camp.svg" alt="No trips" className="h-16 w-16 mx-auto mb-4 opacity-30" />
               <p className="text-xl text-gray-500">Belum ada trip yang tersedia saat ini</p>
               <p className="text-gray-400 mt-2">Pantau terus untuk update trip terbaru!</p>
             </div>
@@ -328,7 +372,7 @@ export default async function HomePage() {
             {user ? (
               <Button size="lg" variant="secondary" asChild className="text-lg px-8 py-6">
                 <Link href="/dashboard">
-                  <Users className="mr-2 h-5 w-5" />
+                  <img src="/user.svg" alt="User" className="mr-2 h-5 w-5" />
                   Dashboard Saya
                 </Link>
               </Button>
@@ -356,7 +400,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <Mountain className="h-8 w-8 text-green-500" />
+                <img src="/camp.svg" alt="HiLink Adventure" className="h-8 w-8" />
                 <span className="text-xl font-bold">
                   <span className="text-green-500">HiLink</span> Adventure
                 </span>

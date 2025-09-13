@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from 'sonner'
 import { 
   Mountain, 
   Eye, 
@@ -28,25 +29,210 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Test Supabase connection on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        console.log('🔗 Supabase connection test:', { 
+          connected: !error, 
+          hasSession: !!data.session,
+          error: error?.message 
+        })
+        
+        if (data.session) {
+          console.log('👤 User already logged in, redirecting...')
+          router.push('/dashboard')
+        }
+      } catch (err) {
+        console.error('💥 Supabase connection failed:', err)
+      }
+    }
+    testConnection()
+  }, [])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
+    // Basic validation
+    if (!email || !password) {
+      setError('Email dan password harus diisi')
+      setLoading(false)
+      return
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError('Format email tidak valid')
+      setLoading(false)
+      return
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      console.log('🔐 Attempting login for:', email)
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(), // Normalize email
+        password: password,
+      })
+
+      console.log('📧 Login response:', { 
+        hasUser: !!data.user, 
+        hasSession: !!data.session, 
+        error: error?.message 
       })
 
       if (error) {
-        setError(error.message)
-      } else {
-        router.push('/')
+        console.error('❌ Login error:', error)
+        
+        // Handle specific error types
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('Email not confirmed') ||
+            error.message.includes('invalid_grant')) {
+          setError('Email atau password salah. Silakan periksa kembali kredensial Anda.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Email Anda belum diverifikasi. Silakan cek email untuk link verifikasi.')
+        } else if (error.message.includes('Too many requests')) {
+          setError('Terlalu banyak percobaan login. Silakan tunggu beberapa menit.')
+        } else if (error.message.includes('User not found')) {
+          setError('Akun dengan email ini tidak ditemukan. Silakan daftar terlebih dahulu.')
+        } else {
+          setError(`Login gagal: ${error.message}`)
+        }
+        return
+      }
+
+      if (data.user && data.session) {
+        console.log('✅ Login successful for:', data.user.email)
+        
+        // Get user profile to check role
+        console.log('👤 Fetching user profile for:', data.user.id)
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, email, full_name')
+          .eq('id', data.user.id)
+          .single()
+
+        console.log('📋 Profile fetch result:', { profile, error: profileError })
+
+        if (profileError) {
+          console.warn('⚠️ Could not fetch profile:', {
+            message: profileError.message,
+            code: profileError.code,
+            details: profileError.details
+          })
+          
+          // Check if it's a missing profile (common for new users)
+          if (profileError.code === 'PGRST116' || profileError.message.includes('No rows found')) {
+            console.log('📝 Profile not found - attempting to create profile for user')
+            
+            // Try to create profile for the user
+            try {
+              const newProfile = {
+                id: data.user.id,
+                email: data.user.email,
+                full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+                role: 'pelanggan',
+                avatar_url: null
+              }
+              
+              const { data: createdProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert([newProfile])
+                .select()
+                .single()
+              
+              if (!createError && createdProfile) {
+                console.log('✅ Profile created successfully:', createdProfile)
+                toast.success('Login berhasil! Profil Anda telah dibuat.', {
+                  duration: 3000,
+                })
+                // Use the created profile for role-based redirect
+                const userRole = createdProfile.role || 'pelanggan'
+                if (userRole === 'admin') {
+                  router.push('/admin')
+                } else {
+                  router.push('/dashboard')
+                }
+                router.refresh()
+                return
+              } else {
+                console.error('❌ Failed to create profile:', createError)
+              }
+            } catch (createErr) {
+              console.error('💥 Exception creating profile:', createErr)
+            }
+            
+            // If profile creation failed, continue with default redirect
+            console.log('📝 Using default redirect due to profile creation failure')
+            toast.success('Login berhasil! Selamat datang.', {
+              duration: 3000,
+            })
+            router.push('/dashboard')
+            router.refresh()
+            return
+          }
+          
+          // For permission errors, try to handle gracefully
+          if (profileError.code === '42501' || profileError.message.includes('permission denied')) {
+            console.error('🚫 Permission denied fetching profile - check RLS policies')
+            toast.success('Login berhasil! Selamat datang kembali.', {
+              duration: 3000,
+            })
+            router.push('/dashboard')
+            router.refresh()
+            return
+          }
+          
+          // For other errors, still redirect to dashboard but log the issue
+          console.error('🚫 Profile fetch error, defaulting to dashboard:', {
+            error: profileError,
+            message: profileError.message,
+            code: profileError.code
+          })
+          toast.success('Login berhasil! Selamat datang kembali.', {
+            duration: 3000,
+          })
+          router.push('/dashboard')
+          router.refresh()
+          return
+        }
+
+        // Role-based redirect
+        const userRole = profile?.role || 'pelanggan'
+        console.log('👤 User role:', userRole)
+        
+        if (userRole === 'admin') {
+          console.log('🔑 Admin login detected, redirecting to admin dashboard')
+          toast.success('Login berhasil! Selamat datang Admin.', {
+            duration: 3000,
+          })
+          router.push('/admin')
+        } else if (userRole === 'tour_leader') {
+          console.log('🗺️ Tour leader login detected, redirecting to guide dashboard')
+          toast.success('Login berhasil! Selamat datang Tour Leader.', {
+            duration: 3000,
+          })
+          router.push('/guide')
+        } else {
+          console.log('👤 Customer login detected, redirecting to customer dashboard')
+          toast.success('Login berhasil! Selamat datang kembali.', {
+            duration: 3000,
+          })
+          router.push('/dashboard')
+        }
+        
         router.refresh()
+      } else {
+        console.error('❌ No user or session returned')
+        setError('Login gagal. Tidak ada sesi yang dibuat.')
       }
     } catch (err) {
-      setError('Terjadi kesalahan. Silakan coba lagi.')
+      console.error('💥 Unexpected login error:', err)
+      setError('Terjadi kesalahan tidak terduga. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }
@@ -92,7 +278,26 @@ export default function LoginPage() {
           <CardContent className="space-y-6">
             {error && (
               <Alert variant="destructive" className="border-red-200 bg-red-50">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error}
+                  {error.includes('Email atau password salah') && (
+                    <div className="mt-2 text-sm">
+                      <Link 
+                        href="/forgot-password" 
+                        className="text-red-700 underline hover:text-red-800"
+                      >
+                        Lupa password?
+                      </Link>
+                      {' atau '}
+                      <Link 
+                        href="/register" 
+                        className="text-red-700 underline hover:text-red-800"
+                      >
+                        Daftar akun baru
+                      </Link>
+                    </div>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -218,15 +423,28 @@ export default function LoginPage() {
 
         {/* Additional Info */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          Dengan masuk, Anda menyetujui{' '}
-          <Link href="/terms" className="text-green-600 hover:underline">
-            Syarat & Ketentuan
-          </Link>{' '}
-          dan{' '}
-          <Link href="/privacy" className="text-green-600 hover:underline">
-            Kebijakan Privasi
-          </Link>{' '}
-          kami.
+          <div className="mb-4">
+            Dengan masuk, Anda menyetujui{' '}
+            <Link href="/terms" className="text-green-600 hover:underline">
+              Syarat & Ketentuan
+            </Link>{' '}
+            dan{' '}
+            <Link href="/privacy" className="text-green-600 hover:underline">
+              Kebijakan Privasi
+            </Link>{' '}
+            kami.
+          </div>
+          
+          {/* Troubleshooting Tips */}
+          <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded-lg">
+            <p className="font-medium mb-2">💡 Tips jika gagal login:</p>
+            <ul className="text-left space-y-1">
+              <li>• Pastikan email dan password benar</li>
+              <li>• Cek email verifikasi jika akun baru</li>
+              <li>• Gunakan "Lupa password?" jika lupa</li>
+              <li>• Coba refresh halaman jika masih error</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

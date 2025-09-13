@@ -424,14 +424,33 @@ export async function createEquipment(formData: FormData) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') { throw new Error('Unauthorized'); }
 
+    // Handle image upload or URL
+    let imageUrl: string | null = null;
+    const imageType = formData.get('image_type') as string;
+    
+    if (imageType === 'file') {
+        const imageFile = formData.get('image_file') as File;
+        if (imageFile && imageFile.size > 0) {
+            try {
+                imageUrl = await uploadImageToSupabase(imageFile);
+            } catch (error) {
+                throw new Error(`Gagal mengupload gambar: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        }
+    } else if (imageType === 'url') {
+        imageUrl = formData.get('image_url') as string || null;
+    }
+
     const equipmentData = {
         name: formData.get('name') as string,
         rental_price_per_day: parseInt(formData.get('rental_price_per_day') as string, 10),
-        stock: parseInt(formData.get('stock') as string, 10),
+        stock_quantity: parseInt(formData.get('stock_quantity') as string, 10),
         description: formData.get('description') as string || null,
+        category: formData.get('category') as string || null,
+        image_url: imageUrl,
     };
     
-    if (!equipmentData.name || isNaN(equipmentData.rental_price_per_day) || isNaN(equipmentData.stock)) {
+    if (!equipmentData.name || isNaN(equipmentData.rental_price_per_day) || isNaN(equipmentData.stock_quantity)) {
         throw new Error("Data peralatan tidak lengkap atau tidak valid.");
     }
 
@@ -440,6 +459,89 @@ export async function createEquipment(formData: FormData) {
     if (error) {
         console.error("Error creating equipment:", error);
         throw new Error("Gagal menyimpan peralatan.");
+    }
+
+    revalidatePath('/admin/equipment');
+}
+
+// Delete equipment
+export async function deleteEquipment(formData: FormData) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { throw new Error('Authentication required'); }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') { throw new Error('Unauthorized'); }
+
+    const equipmentId = formData.get('id') as string;
+    
+    if (!equipmentId) {
+        throw new Error("ID peralatan tidak valid.");
+    }
+
+    const { error } = await supabase.from('equipment').delete().eq('id', equipmentId);
+
+    if (error) {
+        console.error("Error deleting equipment:", error);
+        throw new Error("Gagal menghapus peralatan.");
+    }
+
+    revalidatePath('/admin/equipment');
+}
+
+// Update equipment
+export async function updateEquipment(formData: FormData) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { throw new Error('Authentication required'); }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') { throw new Error('Unauthorized'); }
+
+    const equipmentId = formData.get('id') as string;
+    
+    if (!equipmentId) {
+        throw new Error("ID peralatan tidak valid.");
+    }
+
+    // Handle image upload or URL
+    let imageUrl: string | null = null;
+    const imageType = formData.get('image_type') as string;
+    
+    if (imageType === 'file') {
+        const imageFile = formData.get('image_file') as File;
+        if (imageFile && imageFile.size > 0) {
+            try {
+                imageUrl = await uploadImageToSupabase(imageFile);
+            } catch (error) {
+                throw new Error(`Gagal mengupload gambar: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        }
+    } else if (imageType === 'url') {
+        imageUrl = formData.get('image_url') as string || null;
+    }
+
+    const equipmentData: any = {
+        name: formData.get('name') as string,
+        rental_price_per_day: parseInt(formData.get('rental_price_per_day') as string, 10),
+        stock_quantity: parseInt(formData.get('stock_quantity') as string, 10),
+        description: formData.get('description') as string || null,
+        category: formData.get('category') as string || null,
+        updated_at: new Date().toISOString(),
+    };
+
+    // Only update image_url if a new image was provided
+    if (imageUrl) {
+        equipmentData.image_url = imageUrl;
+    }
+    
+    if (!equipmentData.name || isNaN(equipmentData.rental_price_per_day) || isNaN(equipmentData.stock_quantity)) {
+        throw new Error("Data peralatan tidak lengkap atau tidak valid.");
+    }
+
+    const { error } = await supabase.from('equipment').update(equipmentData).eq('id', equipmentId);
+
+    if (error) {
+        console.error("Error updating equipment:", error);
+        throw new Error("Gagal mengupdate peralatan.");
     }
 
     revalidatePath('/admin/equipment');
