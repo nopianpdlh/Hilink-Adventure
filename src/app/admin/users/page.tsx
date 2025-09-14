@@ -273,18 +273,18 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <Users className="mr-3 h-8 w-8 text-green-600" />
-            Kelola User
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+            <Users className="mr-2 sm:mr-3 h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
+            <span className="truncate">Kelola User</span>
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-sm sm:text-base text-gray-600">
             Kelola semua user, ubah role, dan atur akses sistem. 
           </p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             💡 Untuk menambah user baru, arahkan ke halaman register
           </p>
         </div>
@@ -292,11 +292,11 @@ export default function AdminUsersPage() {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <CardTitle className="text-lg">Filter & Pencarian</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
               <Label htmlFor="search" className="text-sm font-medium text-gray-700">
@@ -355,39 +355,41 @@ export default function AdminUsersPage() {
               <span className="ml-2 text-gray-600">Memuat data user...</span>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Kontak</TableHead>
-                    <TableHead>Terakhir Update</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length === 0 ? (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                        {searchTerm || roleFilter !== 'all' 
-                          ? 'Tidak ada user yang sesuai dengan filter'
-                          : 'Belum ada user terdaftar'
-                        }
-                      </TableCell>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Kontak</TableHead>
+                      <TableHead>Terakhir Update</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                              <User className="w-5 h-5 text-green-600" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900">
-                                {user.full_name || 'Nama tidak diset'}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          {searchTerm || roleFilter !== 'all' 
+                            ? 'Tidak ada user yang sesuai dengan filter'
+                            : 'Belum ada user terdaftar'
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5 text-green-600" />
                               </div>
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {user.full_name || 'Nama tidak diset'}
+                                </div>
                               <div className="text-sm text-gray-500 flex items-center">
                                 <Mail className="w-3 h-3 mr-1" />
                                 {user.email}
@@ -449,20 +451,98 @@ export default function AdminUsersPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden">
+              {filteredUsers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {searchTerm || roleFilter !== 'all' 
+                    ? 'Tidak ada user yang sesuai dengan filter'
+                    : 'Belum ada user terdaftar'
+                  }
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredUsers.map((user) => (
+                    <Card key={user.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1 min-w-0">
+                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900 truncate">
+                                {user.full_name || 'Nama tidak diset'}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center mt-1 truncate">
+                                <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+                                <span className="truncate">{user.email}</span>
+                              </div>
+                              <div className="flex items-center space-x-4 mt-2">
+                                <RoleBadge role={user.role} />
+                                {user.phone && (
+                                  <div className="text-xs text-gray-500 flex items-center">
+                                    <Phone className="w-3 h-3 mr-1" />
+                                    {user.phone}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 flex items-center mt-1">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                {user.created_at ? (
+                                  new Date(user.created_at).toLocaleDateString('id-ID', {
+                                    day: '2-digit',
+                                    month: 'short', 
+                                    year: 'numeric'
+                                  })
+                                ) : (
+                                  'Baru'
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col space-y-2 ml-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(user)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDeleteModal(user)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1"
+                              disabled={user.role === 'admin'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Edit User Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-md sm:max-w-lg z-[100] bg-white border border-gray-200 shadow-2xl">
+        <DialogContent className="max-w-[90vw] sm:max-w-lg z-[100] bg-white border border-gray-200 shadow-2xl m-4 rounded-lg">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="flex items-center text-xl font-semibold">
-              <Edit3 className="mr-2 h-5 w-5 text-blue-600" />
-              Edit User
+            <DialogTitle className="flex items-center text-lg sm:text-xl font-semibold">
+              <Edit3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <span className="truncate">Edit User</span>
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-600">
-              Edit informasi user: <span className="font-medium">{selectedUser?.full_name}</span> ({selectedUser?.email})
+              Edit informasi user: <span className="font-medium truncate">{selectedUser?.full_name}</span> ({selectedUser?.email})
             </DialogDescription>
           </DialogHeader>
           
@@ -583,11 +663,11 @@ export default function AdminUsersPage() {
 
       {/* Delete User Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-md sm:max-w-lg z-[100] bg-white border border-gray-200 shadow-2xl">
+        <DialogContent className="max-w-[90vw] sm:max-w-lg z-[100] bg-white border border-gray-200 shadow-2xl m-4 rounded-lg">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="flex items-center text-xl font-semibold text-red-600">
-              <Trash2 className="mr-2 h-5 w-5" />
-              Hapus User
+            <DialogTitle className="flex items-center text-lg sm:text-xl font-semibold text-red-600">
+              <Trash2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="truncate">Hapus User</span>
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-600">
               Tindakan ini tidak dapat dibatalkan dan akan menghapus semua data terkait user.
