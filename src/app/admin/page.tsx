@@ -66,44 +66,44 @@ export default function AdminDashboardPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
           <Shield className="w-8 h-8 text-green-600" />
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Selamat Datang, Admin!
           </h1>
-          <p className="mt-1 text-gray-600">
+          <p className="mt-1 text-sm sm:text-base text-gray-600">
             Kelola semua aspek website HiLink Adventure dari dashboard ini
           </p>
         </div>
       </div>
 
       {/* Admin Menu Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {adminMenus.map((menu) => {
           const IconComponent = menu.icon
           return (
-            <Card key={menu.href} className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader>
+            <Card key={menu.href} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer">
+              <CardHeader className="pb-4">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-lg ${menu.bgColor} flex items-center justify-center`}>
+                  <div className={`w-12 h-12 rounded-lg ${menu.bgColor} flex items-center justify-center flex-shrink-0`}>
                     <IconComponent className={`w-6 h-6 ${menu.color}`} />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{menu.title}</CardTitle>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">{menu.title}</CardTitle>
                   </div>
                 </div>
-                <CardDescription className="mt-2">
+                <CardDescription className="mt-2 text-sm leading-relaxed">
                   {menu.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <Link href={menu.href}>
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-sm py-2">
                     Buka {menu.title}
                   </Button>
                 </Link>
