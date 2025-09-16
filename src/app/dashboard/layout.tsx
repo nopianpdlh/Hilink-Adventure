@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PropsWithChildren } from "react";
+import UserSidebar from "@/components/dashboard/UserSidebar";
 
 export default async function DashboardLayout({ children }: PropsWithChildren) {
     const supabase = await createClient();
@@ -12,35 +13,54 @@ export default async function DashboardLayout({ children }: PropsWithChildren) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-             <header className="bg-white shadow-sm sticky top-0 z-20">
-                <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-                <Link href="/" className="text-2xl font-bold text-gray-900">
-                    <span className="text-green-600">HiLink</span> Adventure
-                </Link>
-                <div className="flex items-center space-x-4">
-                    <Link href="/dashboard/my-bookings" className="font-medium text-gray-700 hover:text-green-600">Dashboard</Link>
-                    <span className="text-sm text-gray-600 hidden sm:block">{user.email}</span>
-                    <form action="/auth/sign-out" method="post">
-                        <button type="submit" className="text-gray-800 hover:text-green-600 font-medium">Logout</button>
-                    </form>
-                </div>
+        <div className="min-h-screen bg-gray-50">
+             {/* Header - Desktop Only */}
+             <header className="hidden lg:block bg-white shadow-sm sticky top-0 z-30 border-b">
+                <nav className="container mx-auto px-4 lg:px-6 py-4 flex justify-between items-center">
+                    <Link href="/" className="text-2xl font-bold text-gray-900">
+                        <span className="text-green-600">HiLink</span> Adventure
+                    </Link>
+                    <div className="flex items-center space-x-4">
+                        <Link href="/dashboard" className="font-medium text-gray-700 hover:text-green-600 transition-colors">
+                            Dashboard
+                        </Link>
+                        <Link href="/trips" className="font-medium text-gray-700 hover:text-green-600 transition-colors">
+                            Open Trip
+                        </Link>
+                        <Link href="/equipment" className="font-medium text-gray-700 hover:text-green-600 transition-colors">
+                            Sewa Alat
+                        </Link>
+                        <span className="text-sm text-gray-600 truncate max-w-[150px]">
+                            {user.email}
+                        </span>
+                        <form action="/auth/sign-out" method="post">
+                            <button type="submit" className="text-sm font-medium text-gray-700 hover:text-green-600 transition-colors">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
                 </nav>
             </header>
-            <div className="container mx-auto p-4 lg:p-8 flex flex-col lg:flex-row gap-8">
-                <aside className="lg:w-1/4">
-                    <div className="bg-white p-6 rounded-lg shadow">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">Menu</h2>
-                        <nav className="flex flex-col space-y-2">
-                            <Link href="/dashboard/my-bookings" className="px-4 py-2 rounded text-gray-700 hover:bg-green-100 hover:text-green-700 font-medium">
-                                Pesananku
-                            </Link>
-                            {/* Tambahkan link menu lain di sini, misal: Profil, Sewa Alat, dll */}
-                        </nav>
+
+            {/* Mobile Header */}
+            <header className="lg:hidden bg-white shadow-sm sticky top-0 z-30 border-b">
+                <nav className="px-16 py-4 flex justify-between items-center">
+                    <Link href="/" className="text-xl font-bold text-gray-900">
+                        <span className="text-green-600">HiLink</span> Adventure
+                    </Link>
+                    <div className="text-sm text-gray-600 truncate max-w-[120px]">
+                        {user.email}
                     </div>
-                </aside>
-                <main className="lg:w-3/4">
-                    <div className="bg-white p-6 lg:p-8 rounded-lg shadow">
+                </nav>
+            </header>
+
+            <div className="flex min-h-[calc(100vh-64px)]">
+                {/* Sidebar */}
+                <UserSidebar />
+                
+                {/* Main Content */}
+                <main className="flex-1 p-4 lg:p-6">
+                    <div className="bg-white rounded-lg shadow-sm min-h-[calc(100vh-120px)] p-4 sm:p-6 lg:p-8">
                         {children}
                     </div>
                 </main>
