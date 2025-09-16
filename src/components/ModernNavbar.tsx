@@ -27,7 +27,8 @@ import {
   Shield,
   Home
 } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { VisuallyHidden } from '@/components/ui/visually-hidden'
 
 export default function Navbar() {
   const { user, profile, loading, signOut } = useAuth()
@@ -209,8 +210,13 @@ export default function Navbar() {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <div className="flex flex-col space-y-6 mt-6">
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-white text-gray-900 border-l border-gray-200 shadow-2xl [&_*]:text-gray-900">
+                <SheetHeader>
+                  <VisuallyHidden>
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                  </VisuallyHidden>
+                </SheetHeader>
+                <div className="flex flex-col space-y-6 mt-6 bg-white">
                   {/* Mobile Navigation Links */}
                   <div className="flex flex-col space-y-4">
                     {navItems.map((item) => (
@@ -218,17 +224,17 @@ export default function Navbar() {
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-3 text-gray-700 hover:text-green-600 transition-colors p-2 rounded-lg hover:bg-green-50"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-green-600 transition-colors p-3 rounded-lg hover:bg-green-50 border border-transparent hover:border-green-200"
                       >
-                        <item.icon className="h-5 w-5" />
-                        <span className="font-medium">{item.label}</span>
+                        <item.icon className="h-5 w-5 text-gray-600" />
+                        <span className="font-medium text-gray-800">{item.label}</span>
                       </Link>
                     ))}
                   </div>
 
                   {/* Mobile User Section */}
                   {loading ? (
-                    <div className="border-t pt-6">
+                    <div className="border-t border-gray-200 pt-6 bg-white">
                       <div className="flex items-center space-x-3 mb-4">
                         <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
                         <div className="space-y-2">
@@ -238,7 +244,7 @@ export default function Navbar() {
                       </div>
                     </div>
                   ) : user ? (
-                    <div className="border-t pt-6">
+                    <div className="border-t border-gray-200 pt-6 bg-white">
                       <div className="flex items-center space-x-3 mb-4">
                         <Avatar className="h-10 w-10">
                           <AvatarImage 
@@ -263,10 +269,10 @@ export default function Navbar() {
                             key={item.href}
                             href={item.href}
                             onClick={() => setIsOpen(false)}
-                            className="flex items-center space-x-3 text-gray-700 hover:text-green-600 transition-colors p-2 rounded-lg hover:bg-green-50"
+                            className="flex items-center space-x-3 text-gray-700 hover:text-green-600 transition-colors p-3 rounded-lg hover:bg-green-50 border border-transparent hover:border-green-200"
                           >
-                            <item.icon className="h-5 w-5" />
-                            <span>{item.label}</span>
+                            <item.icon className="h-5 w-5 text-gray-600" />
+                            <span className="text-gray-800">{item.label}</span>
                           </Link>
                         ))}
                         <button
@@ -274,7 +280,7 @@ export default function Navbar() {
                             handleSignOut()
                             setIsOpen(false)
                           }}
-                          className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors p-2 rounded-lg hover:bg-red-50 w-full text-left"
+                          className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors p-3 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 w-full text-left"
                         >
                           <LogOut className="h-5 w-5" />
                           <span>Log out</span>
@@ -282,11 +288,11 @@ export default function Navbar() {
                       </div>
                     </div>
                   ) : (
-                    <div className="border-t pt-6 flex flex-col space-y-3">
-                      <Button variant="outline" asChild onClick={() => setIsOpen(false)}>
+                    <div className="border-t border-gray-200 pt-6 flex flex-col space-y-3 bg-white">
+                      <Button variant="outline" asChild onClick={() => setIsOpen(false)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
                         <Link href="/login">Masuk</Link>
                       </Button>
-                      <Button asChild className="bg-green-600 hover:bg-green-700" onClick={() => setIsOpen(false)}>
+                      <Button asChild className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsOpen(false)}>
                         <Link href="/register">Daftar</Link>
                       </Button>
                     </div>
