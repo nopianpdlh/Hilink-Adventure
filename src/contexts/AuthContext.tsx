@@ -71,9 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile with auto-create fallback
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('🔍 Fetching profile for user:', userId)
-      console.log('🔗 Supabase client status:', !!supabase)
-      
       // Test basic connectivity first
       const { data: testData, error: testError } = await supabase
         .from('profiles')
