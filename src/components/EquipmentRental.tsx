@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Minus, Package, Calculator } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export interface EquipmentItem {
   id: string
@@ -34,7 +35,7 @@ export default function EquipmentRental({ tripId, tripDuration, onTotalChange }:
 
   useEffect(() => {
     fetchEquipment()
-  }, [tripId])
+  }, []) // Remove tripId dependency since we're fetching all available equipment
 
   useEffect(() => {
     const total = rentalItems.reduce((sum, item) => sum + item.total_price, 0)
@@ -44,30 +45,28 @@ export default function EquipmentRental({ tripId, tripDuration, onTotalChange }:
   const fetchEquipment = async () => {
     try {
       setError(null)
-      const response = await fetch(`/api/equipment?trip_id=${tripId}`)
+      const supabase = createClient()
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      const { data, error: supabaseError } = await supabase
+        .from('equipment')
+        .select('*')
+        .gt('stock_quantity', 0) // Only show available equipment
+      
+      if (supabaseError) {
+        throw new Error(supabaseError.message)
       }
       
-      const data = await response.json()
+      // Map the database fields to our interface
+      const mappedData: EquipmentItem[] = data?.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        price_per_day: item.rental_price_per_day || item.price_per_day || 0,
+        description: item.description,
+        stock_available: item.stock_quantity,
+        category: item.category || 'other'
+      })) || []
       
-      // Debug log untuk melihat struktur data
-      console.log('Equipment API response:', data)
-      
-      // Handle error response dari API
-      if (data.error) {
-        throw new Error(data.error)
-      }
-      
-      // Pastikan data adalah array
-      if (Array.isArray(data)) {
-        setEquipmentList(data)
-      } else {
-        console.error('Equipment data is not an array:', data)
-        setEquipmentList([])
-        setError('Format data tidak valid')
-      }
+      setEquipmentList(mappedData)
     } catch (error) {
       console.error('Error fetching equipment:', error)
       setError(error instanceof Error ? error.message : 'Gagal memuat peralatan')
