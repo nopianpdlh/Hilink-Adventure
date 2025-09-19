@@ -35,6 +35,12 @@ export default function Navbar() {
   const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure component is mounted on client side
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     // Handle scroll effect
@@ -42,12 +48,15 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 10)
     }
     
-    window.addEventListener('scroll', handleScroll)
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
+    // Only add event listener on the client side
+    if (typeof window !== 'undefined' && mounted) {
+      window.addEventListener('scroll', handleScroll)
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll)
+      }
     }
-  }, [])
+  }, [mounted])
 
   const handleSignOut = async () => {
     try {
