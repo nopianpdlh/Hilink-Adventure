@@ -1,561 +1,1045 @@
-import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import Image from 'next/image'
+import ModernNavbar from '@/components/ModernNavbar'
 import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import ModernNavbar from '@/components/ModernNavbar'
+import { Textarea } from '@/components/ui/textarea'
 import { 
-  Mountain, 
-  ArrowLeft,
-  Star,
-  Package,
-  Shield,
-  Clock,
+  ArrowLeft, 
+  ShoppingCart, 
+  Star, 
+  Shield, 
+  Clock, 
   MapPin,
   Calendar,
   Users,
-  ShoppingCart,
+  Package,
+  DollarSign,
+  ImageIcon,
   Heart,
   Share2,
-  Info,
+  Truck,
   CheckCircle,
   XCircle,
   Camera,
-  Zap,
-  Award
+  Plus,
+  Minus,
+  Mountain,
+  MessageCircle,
+  ThumbsUp,
+  Send
 } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
+// Types - Updated to match Supabase schema
 interface Equipment {
-  id: string
+  id: string // UUID in schema
   name: string
-  description: string
-  price_per_day: number
-  category: string
+  description: string | null
+  rental_price_per_day: number
+  stock_quantity: number
   image_url: string | null
-  available_quantity: number
-  total_quantity: number
-  brand?: string
-  condition?: string
-  specifications?: any
-  features?: string[]
-  included_items?: string[]
+  category: string | null
+  price_per_day: number | null
+  created_at: string
+  updated_at: string | null
 }
 
-// Sample equipment data
-const sampleEquipment: Equipment = {
-  id: '1',
-  name: 'Carrier Eiger 60L Adventure Pro',
-  description: 'Tas carrier premium dengan kapasitas 60L yang dirancang khusus untuk petualangan outdoor multi-day. Dilengkapi dengan sistem ventilasi punggung, rain cover, dan berbagai compartment untuk organisasi gear yang optimal.',
-  price_per_day: 25000,
-  category: 'backpack',
-  image_url: null,
-  available_quantity: 5,
-  total_quantity: 8,
-  brand: 'Eiger',
-  condition: 'Sangat Baik',
-  specifications: {
-    capacity: '60L',
-    weight: '2.8kg',
-    material: 'Ripstop Nylon 420D',
-    dimensions: '75 x 35 x 25 cm',
-    max_load: '25kg'
-  },
-  features: [
-    'Rain Cover Included',
-    'Ventilated Back System',
-    'Multiple Compartments',
-    'Adjustable Shoulder Straps',
-    'Hip Belt with Pockets',
-    'Hydration Compatible',
-    'Compression Straps',
-    'External Attachment Points'
-  ],
-  included_items: [
-    '1x Carrier Bag 60L',
-    '1x Rain Cover',
-    '1x Instruction Manual',
-    '1x Warranty Card'
-  ]
+interface RentalState {
+  quantity: number
+  rentalDays: number
+  startDate: string
+  endDate: string
+  totalPrice: number
 }
 
-// Rental Booking Component
-function RentalBooking({ equipment }: { equipment: Equipment }) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(price)
+interface Review {
+  id: string
+  user_id: string
+  rating: number
+  comment: string
+  helpful_count: number
+  created_at: string
+  profiles: {
+    full_name: string
+    avatar_url: string | null
+  }
+}
+
+export default function EquipmentDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const [equipment, setEquipment] = useState<Equipment | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [averageRating, setAverageRating] = useState(0)
+  const [totalReviews, setTotalReviews] = useState(0)
+  const [newReview, setNewReview] = useState({ rating: 0, comment: '' })
+  const [rental, setRental] = useState<RentalState>({
+    quantity: 1,
+    rentalDays: 1,
+    startDate: '',
+    endDate: '',
+    totalPrice: 0
+  })
+
+  // Fetch equipment data, reviews, wishlist status
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+        
+        // Use client-side supabase for auth check
+        const clientSupabase = createClient()
+        const { data: { user }, error: userError } = await clientSupabase.auth.getUser()
+        
+        console.log('Auth check:', { user, userError }) // Debug log
+        setUser(user)
+        
+        // Fetch equipment data - use anonymous supabase for public data
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from('equipment')
+          .select('*')
+          .eq('id', params.id)
+          .single()
+
+        if (equipmentError) throw equipmentError
+        setEquipment(equipmentData)
+
+        // Fetch reviews - public data
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('equipment_reviews')
+          .select(`
+            *,
+            profiles (
+              full_name,
+              avatar_url
+            )
+          `)
+          .eq('equipment_id', params.id)
+          .order('created_at', { ascending: false })
+
+        if (reviewsData) {
+          setReviews(reviewsData)
+          setTotalReviews(reviewsData.length)
+          
+          if (reviewsData.length > 0) {
+            const avgRating = reviewsData.reduce((sum, review) => sum + review.rating, 0) / reviewsData.length
+            setAverageRating(Math.round(avgRating * 10) / 10)
+          }
+        }
+
+        // Check if item is in user's wishlist - only if user is logged in
+        if (user) {
+          const { data: wishlistData } = await clientSupabase
+            .from('equipment_wishlist')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('equipment_id', params.id)
+            .single()
+          
+          setIsInWishlist(!!wishlistData)
+          console.log('Wishlist check:', { wishlistData, isInWishlist: !!wishlistData }) // Debug log
+        }
+
+      } catch (err) {
+        console.error('Fetch data error:', err) // Debug log
+        setError(err instanceof Error ? err.message : 'Failed to load equipment')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchData()
+    }
+  }, [params.id])
+
+  // Listen to auth state changes
+  useEffect(() => {
+    const clientSupabase = createClient()
+    
+    const { data: { subscription } } = clientSupabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id) // Debug log
+        setUser(session?.user || null)
+        
+        // If user logs in/out, recheck wishlist status
+        if (session?.user && params.id) {
+          const { data: wishlistData } = await clientSupabase
+            .from('equipment_wishlist')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('equipment_id', params.id)
+            .single()
+          
+          setIsInWishlist(!!wishlistData)
+        } else {
+          setIsInWishlist(false)
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [params.id])
+
+  // Calculate rental dates and total price
+  useEffect(() => {
+    if (rental.startDate && rental.rentalDays > 0) {
+      const startDate = new Date(rental.startDate)
+      const endDate = new Date(startDate)
+      endDate.setDate(startDate.getDate() + rental.rentalDays)
+      
+      const totalPrice = equipment ? 
+        rental.quantity * equipment.rental_price_per_day * rental.rentalDays : 0
+
+      setRental(prev => ({
+        ...prev,
+        endDate: endDate.toISOString().split('T')[0],
+        totalPrice
+      }))
+    }
+  }, [rental.startDate, rental.rentalDays, rental.quantity, equipment])
+
+  // Wishlist toggle function
+  const toggleWishlist = async () => {
+    if (!user) {
+      toast.error('Please login to add items to wishlist')
+      return
+    }
+
+    const clientSupabase = createClient()
+
+    try {
+      if (isInWishlist) {
+        const { error } = await clientSupabase
+          .from('equipment_wishlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('equipment_id', params.id)
+        
+        if (error) throw error
+        
+        setIsInWishlist(false)
+        toast.success('Removed from wishlist')
+      } else {
+        const { error } = await clientSupabase
+          .from('equipment_wishlist')
+          .insert([{
+            user_id: user.id,
+            equipment_id: params.id
+          }])
+        
+        if (error) throw error
+        
+        setIsInWishlist(true)
+        toast.success('Added to wishlist')
+      }
+    } catch (error) {
+      console.error('Wishlist error:', error) // Debug log
+      toast.error('Failed to update wishlist: ' + (error as any)?.message)
+    }
   }
 
-  const getAvailabilityStatus = () => {
-    const percentage = (equipment.available_quantity / equipment.total_quantity) * 100
-    if (percentage > 70) return { text: 'Tersedia', color: 'text-green-600', bgColor: 'bg-green-50', icon: CheckCircle }
-    if (percentage > 30) return { text: 'Terbatas', color: 'text-yellow-600', bgColor: 'bg-yellow-50', icon: Clock }
-    if (percentage > 0) return { text: 'Sedikit', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: Clock }
-    return { text: 'Habis', color: 'text-red-600', bgColor: 'bg-red-50', icon: XCircle }
+  // Share function
+  const handleShare = async () => {
+    const url = window.location.href
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: equipment?.name,
+          text: `Check out this equipment: ${equipment?.name}`,
+          url: url
+        })
+      } catch (error) {
+        // User cancelled sharing
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url)
+        toast.success('Link copied to clipboard!')
+      } catch (error) {
+        toast.error('Failed to copy link')
+      }
+    }
   }
 
-  const availability = getAvailabilityStatus()
+  // Submit review function
+  const submitReview = async () => {
+    if (!user) {
+      toast.error('Please login to submit a review')
+      return
+    }
 
-  return (
-    <Card className="sticky top-8">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl text-green-600">
-              {formatPrice(equipment.price_per_day)}
-            </CardTitle>
-            <CardDescription>per hari</CardDescription>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Heart className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
+    if (newReview.rating === 0) {
+      toast.error('Please select a rating')
+      return
+    }
 
-      <CardContent className="space-y-6">
-        {/* Availability Status */}
-        <div className={`p-4 rounded-lg ${availability.bgColor}`}>
-          <div className="flex items-center">
-            <availability.icon className={`h-5 w-5 ${availability.color} mr-2`} />
-            <div>
-              <p className={`font-semibold ${availability.color}`}>{availability.text}</p>
-              <p className="text-sm text-gray-600">
-                {equipment.available_quantity} dari {equipment.total_quantity} tersedia
-              </p>
-            </div>
-          </div>
-        </div>
+    const clientSupabase = createClient()
 
-        {/* Rental Form */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="start-date">Tanggal Mulai</Label>
-              <Input
-                id="start-date"
-                type="date"
-                className="mt-1"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end-date">Tanggal Selesai</Label>
-              <Input
-                id="end-date"
-                type="date"
-                className="mt-1"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-          </div>
+    try {
+      const { data, error } = await clientSupabase
+        .from('equipment_reviews')
+        .insert([{
+          equipment_id: params.id,
+          user_id: user.id,
+          rating: newReview.rating,
+          comment: newReview.comment
+        }])
+        .select(`
+          *,
+          profiles (
+            full_name,
+            avatar_url
+          )
+        `)
+        .single()
 
-          <div>
-            <Label htmlFor="quantity">Jumlah</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              max={equipment.available_quantity}
-              defaultValue="1"
-              className="mt-1"
-            />
-          </div>
+      if (error) throw error
 
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Subtotal (3 hari)</span>
-              <span className="font-semibold">{formatPrice(equipment.price_per_day * 3)}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Deposit keamanan</span>
-              <span className="font-semibold">{formatPrice(equipment.price_per_day * 2)}</span>
-            </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Total</span>
-                <span className="text-xl font-bold text-green-600">
-                  {formatPrice(equipment.price_per_day * 5)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
+      // Add new review to list
+      setReviews(prev => [data, ...prev])
+      setTotalReviews(prev => prev + 1)
+      
+      // Recalculate average rating
+      const newTotal = totalReviews + 1
+      const newAverage = ((averageRating * totalReviews) + newReview.rating) / newTotal
+      setAverageRating(Math.round(newAverage * 10) / 10)
 
-      <CardFooter className="space-y-3">
-        <Button 
-          className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg"
-          disabled={equipment.available_quantity === 0}
-        >
-          <ShoppingCart className="mr-2 h-5 w-5" />
-          {equipment.available_quantity === 0 ? 'Tidak Tersedia' : 'Sewa Sekarang'}
-        </Button>
-        <Button variant="outline" className="w-full">
-          <Calendar className="mr-2 h-4 w-4" />
-          Cek Ketersediaan
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
+      // Reset form
+      setNewReview({ rating: 0, comment: '' })
+      toast.success('Review submitted successfully!')
 
-// Equipment Gallery Component
-function EquipmentGallery({ equipment }: { equipment: Equipment }) {
-  const images = [
-    equipment.image_url || `https://placehold.co/600x400/22c55e/ffffff?text=${encodeURIComponent(equipment.name)}`,
-    `https://placehold.co/600x400/1e40af/ffffff?text=Detail+1`,
-    `https://placehold.co/600x400/dc2626/ffffff?text=Detail+2`,
-    `https://placehold.co/600x400/7c3aed/ffffff?text=Detail+3`,
-  ]
+    } catch (error) {
+      console.error('Review error:', error) // Debug log
+      toast.error('Failed to submit review: ' + (error as any)?.message)
+    }
+  }
 
-  return (
-    <div className="space-y-4">
-      {/* Main Image */}
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-        <img 
-          src={images[0]} 
-          alt={equipment.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-4 left-4">
-          <Badge className="bg-green-600 hover:bg-green-600">
-            {equipment.brand}
-          </Badge>
-        </div>
-        <div className="absolute top-4 right-4">
-          <Badge variant="secondary">
-            <Camera className="w-3 h-3 mr-1" />
-            {images.length} Foto
-          </Badge>
+  // Handle rent now function
+  const handleRentNow = async () => {
+    console.log('handleRentNow called!') // Debug log
+    console.log('User:', user) // Debug log
+    console.log('Rental startDate:', rental.startDate) // Debug log
+    console.log('isAvailable:', isAvailable) // Debug log
+
+    if (!user) {
+      toast.error('Please login to rent equipment')
+      return
+    }
+
+    if (!rental.startDate) {
+      toast.error('Please select a start date')
+      return
+    }
+
+    if (!isAvailable) {
+      toast.error('Equipment is not available')
+      return
+    }
+
+    // For now, show success message (you can implement actual booking logic later)
+    toast.success(`Rent request submitted!\nEquipment: ${equipment?.name}\nQuantity: ${rental.quantity}\nDays: ${rental.rentalDays}\nTotal: Rp ${total.toLocaleString('id-ID')}`)
+  }
+
+  // Handle add to cart function
+  const handleAddToCart = async () => {
+    console.log('handleAddToCart called!') // Debug log
+    console.log('User:', user) // Debug log
+    console.log('Rental startDate:', rental.startDate) // Debug log
+    console.log('isAvailable:', isAvailable) // Debug log
+
+    if (!user) {
+      toast.error('Please login to add items to cart')
+      return
+    }
+
+    if (!rental.startDate) {
+      toast.error('Please select a start date')
+      return
+    }
+
+    if (!isAvailable) {
+      toast.error('Equipment is not available')
+      return
+    }
+
+    // For now, show success message (you can implement actual cart logic later)
+    toast.success(`Added to cart!\nEquipment: ${equipment?.name}\nQuantity: ${rental.quantity}\nDays: ${rental.rentalDays}`)
+  }
+
+  // Handle chat seller function
+  const handleChatSeller = () => {
+    console.log('handleChatSeller called!') // Debug log
+    console.log('User:', user) // Debug log
+
+    if (!user) {
+      toast.error('Please login to chat with seller')
+      return
+    }
+
+    // For now, show message (you can implement actual chat logic later)
+    toast.info('Chat feature will be available soon!')
+  }
+
+  // Calculate subtotal and total
+  const subtotal = equipment ? rental.quantity * equipment.rental_price_per_day * rental.rentalDays : 0
+  const serviceFee = Math.round(subtotal * 0.05) // 5% service fee
+  const insurance = Math.round(subtotal * 0.03) // 3% insurance
+  const total = subtotal + serviceFee + insurance
+
+  // Handle quantity change
+  const handleQuantityChange = (change: number) => {
+    setRental(prev => ({
+      ...prev,
+      quantity: Math.max(1, Math.min(equipment?.stock_quantity || 1, prev.quantity + change))
+    }))
+  }
+
+  // Handle rental days change
+  const handleRentalDaysChange = (change: number) => {
+    setRental(prev => ({
+      ...prev,
+      rentalDays: Math.max(1, prev.rentalDays + change)
+    }))
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <ModernNavbar />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
       </div>
-
-      {/* Thumbnail Images */}
-      <div className="grid grid-cols-4 gap-2">
-        {images.map((image, index) => (
-          <div key={index} className="aspect-square overflow-hidden rounded-md bg-gray-100 cursor-pointer hover:opacity-75">
-            <img 
-              src={image} 
-              alt={`${equipment.name} ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Main Page Component
-export default async function EquipmentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const supabase = await createClient()
-  
-  // Get user session
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Fetch equipment details
-  const { data: equipment, error } = await supabase
-    .from('equipment')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  // Use sample data if not found in database
-  const displayEquipment = equipment || sampleEquipment
-
-  if (error && equipment === null) {
-    console.error('Error fetching equipment:', error)
-    // Don't return notFound() here, use sample data instead
+    )
   }
+
+  // Error state
+  if (error || !equipment) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <ModernNavbar />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Equipment Not Found</h2>
+            <p className="text-gray-600 mb-6">{error || 'The equipment you are looking for does not exist.'}</p>
+            <Button asChild>
+              <Link href="/equipment">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Equipment
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const isAvailable = equipment.stock_quantity > 0
+  const availabilityColor = isAvailable ? 'text-green-600' : 'text-red-600'
+  const availabilityIcon = isAvailable ? CheckCircle : XCircle
 
   return (
     <div className="min-h-screen bg-gray-50">
       <ModernNavbar />
       
       {/* Breadcrumb */}
-      <section className="bg-white border-b border-gray-200 pt-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <nav className="flex items-center space-x-2 text-sm text-gray-600">
             <Link href="/" className="hover:text-green-600">Home</Link>
             <span>/</span>
             <Link href="/equipment" className="hover:text-green-600">Equipment</Link>
             <span>/</span>
-            <span className="text-gray-900">{displayEquipment.name}</span>
-          </div>
+            <span className="text-gray-900">{equipment.name}</span>
+          </nav>
         </div>
-      </section>
+      </div>
 
-      {/* Main Content */}
-      <section className="py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Back Button */}
-          <Button variant="ghost" asChild className="mb-6">
-            <Link href="/equipment">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Kembali ke Equipment
-            </Link>
-          </Button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <Button 
+          variant="ghost" 
+          onClick={() => router.back()}
+          className="mb-6 hover:bg-green-50 hover:text-green-600"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Equipment List
+        </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Images and Details */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Equipment Gallery */}
-              <EquipmentGallery equipment={displayEquipment} />
-
-              {/* Equipment Info */}
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                      {displayEquipment.name}
-                    </h1>
-                    <div className="flex items-center space-x-4 text-gray-600">
-                      <div className="flex items-center">
-                        <Package className="w-4 h-4 mr-1" />
-                        <span className="capitalize">{displayEquipment.category}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                        <span>4.8 (42 ulasan)</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Shield className="w-4 h-4 mr-1" />
-                        <span>{displayEquipment.condition}</span>
-                      </div>
+        <div className="grid lg:grid-cols-2 gap-8 mb-8">
+          {/* Equipment Images */}
+          <div className="space-y-4">
+            <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+              {equipment.image_url ? (
+                <Image
+                  src={equipment.image_url}
+                  alt={equipment.name}
+                  width={600}
+                  height={600}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ImageIcon className="h-24 w-24 text-gray-400" />
+                </div>
+              )}
+            </div>
+            
+            {/* Thumbnail Gallery */}
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((index) => (
+                <div key={index} className="aspect-square rounded-md overflow-hidden bg-gray-100">
+                  {equipment.image_url ? (
+                    <Image
+                      src={equipment.image_url}
+                      alt={`${equipment.name} view ${index}`}
+                      width={100}
+                      height={100}
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-75"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera className="h-6 w-6 text-gray-400" />
                     </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Equipment Details */}
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-start justify-between mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 pr-4">{equipment.name}</h1>
+                <div className="flex space-x-2 flex-shrink-0">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={toggleWishlist}
+                    className={`${isInWishlist ? 'text-red-500 border-red-300' : ''}`}
+                  >
+                    <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500' : ''}`} />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
+                <Badge variant="secondary" className="text-sm">
+                  {equipment.category}
+                </Badge>
+                <div className="flex items-center">
+                  {availabilityIcon === CheckCircle ? (
+                    <CheckCircle className={`h-4 w-4 mr-1 ${availabilityColor}`} />
+                  ) : (
+                    <XCircle className={`h-4 w-4 mr-1 ${availabilityColor}`} />
+                  )}
+                  <span className={`text-sm font-medium ${availabilityColor}`}>
+                    {isAvailable ? `${equipment.stock_quantity} Available` : 'Out of Stock'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-1 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} className={`h-4 w-4 ${star <= averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                ))}
+                <span className="text-sm text-gray-600 ml-2">
+                  ({averageRating} • {totalReviews} reviews)
+                </span>
+              </div>
+            </div>
+
+            {/* Price */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-2xl font-bold text-green-600">
+                  Rp {equipment.rental_price_per_day.toLocaleString('id-ID')}
+                </h3>
+                <p className="text-gray-600">per hari</p>
+              </CardHeader>
+            </Card>
+
+            {/* Rental Configuration */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Rental Configuration</h3>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Quantity Selection */}
+                <div>
+                  <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                  <div className="flex items-center space-x-3 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={rental.quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      value={rental.quantity}
+                      min="1"
+                      max={equipment.stock_quantity}
+                      className="w-20 text-center"
+                      readOnly
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={rental.quantity >= equipment.stock_quantity}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-lg leading-relaxed">
-                  {displayEquipment.description}
-                </p>
-              </div>
+                {/* Rental Period */}
+                <div>
+                  <Label htmlFor="rental-days" className="text-sm font-medium">Rental Days</Label>
+                  <div className="flex items-center space-x-3 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRentalDaysChange(-1)}
+                      disabled={rental.rentalDays <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      id="rental-days"
+                      type="number"
+                      value={rental.rentalDays}
+                      min="1"
+                      className="w-20 text-center"
+                      readOnly
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRentalDaysChange(1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
 
-              {/* Specifications */}
-              {displayEquipment.specifications && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Info className="mr-2 h-5 w-5" />
-                      Spesifikasi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      {Object.entries(displayEquipment.specifications).map(([key, value]) => (
-                        <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
-                          <span className="text-gray-600 capitalize">{key.replace('_', ' ')}:</span>
-                          <span className="font-medium">{value as string}</span>
-                        </div>
-                      ))}
+                {/* Date Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="start-date" className="text-sm font-medium">Start Date</Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      value={rental.startDate}
+                      onChange={(e) => setRental(prev => ({ ...prev, startDate: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end-date" className="text-sm font-medium">End Date</Label>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      value={rental.endDate}
+                      readOnly
+                      className="mt-1 bg-gray-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Rental Summary */}
+                {subtotal > 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg space-y-3">
+                    <h4 className="font-medium text-gray-900">Rental Summary</h4>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">
+                          Subtotal ({rental.quantity} × {rental.rentalDays} days)
+                        </span>
+                        <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Service Fee (5%)</span>
+                        <span>Rp {serviceFee.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Insurance (3%)</span>
+                        <span>Rp {insurance.toLocaleString('id-ID')}</span>
+                      </div>
+                      <hr className="border-gray-300" />
+                      <div className="flex justify-between items-center text-lg font-semibold">
+                        <span>Total</span>
+                        <span className="text-green-600">
+                          Rp {total.toLocaleString('id-ID')}
+                        </span>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Features */}
-              {displayEquipment.features && displayEquipment.features.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Zap className="mr-2 h-5 w-5" />
-                      Fitur & Keunggulan
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {displayEquipment.features.map((feature: string, index: number) => (
-                        <div key={index} className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-600 mr-2 flex-shrink-0" />
-                          <span className="text-gray-700">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Included Items */}
-              {displayEquipment.included_items && displayEquipment.included_items.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Package className="mr-2 h-5 w-5" />
-                      Yang Termasuk dalam Paket
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {displayEquipment.included_items.map((item: string, index: number) => (
-                        <div key={index} className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-600 mr-2 flex-shrink-0" />
-                          <span className="text-gray-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Terms & Conditions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Shield className="mr-2 h-5 w-5" />
-                    Syarat & Ketentuan Rental
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Deposit keamanan akan dikembalikan 100% jika equipment dikembalikan dalam kondisi baik</span>
+                    
+                    <p className="text-xs text-gray-500">
+                      Price per day: Rp {equipment.rental_price_per_day.toLocaleString('id-ID')}
+                    </p>
                   </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Pemeriksaan kondisi equipment akan dilakukan saat pengambilan dan pengembalian</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Keterlambatan pengembalian dikenakan denda 50% dari harga sewa per hari</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Equipment yang hilang atau rusak berat akan dikenakan biaya penggantian sesuai harga market</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Booking Form */}
-            <div className="lg:col-span-1">
-              <RentalBooking equipment={displayEquipment} />
-
-              {/* Additional Info */}
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Informasi Tambahan</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 text-gray-400 mr-3" />
-                    <div>
-                      <p className="font-medium">Lokasi Pickup</p>
-                      <p className="text-sm text-gray-600">Jakarta Selatan</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 text-gray-400 mr-3" />
-                    <div>
-                      <p className="font-medium">Jam Operasional</p>
-                      <p className="text-sm text-gray-600">09:00 - 18:00 WIB</p>
+                )}
+              </CardContent>
+              <CardFooter className="flex-col space-y-3">
+                {user ? (
+                  <div className="w-full space-y-3">
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      disabled={!isAvailable || !rental.startDate}
+                      onClick={handleRentNow}
+                    >
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      {isAvailable ? 'Rent Now' : 'Out of Stock'}
+                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline"
+                        size="lg"
+                        className="w-full"
+                        disabled={!isAvailable || !rental.startDate}
+                        onClick={handleAddToCart}
+                      >
+                        Add to Cart
+                      </Button>
+                      <Button 
+                        variant="ghost"
+                        size="lg"
+                        className="w-full"
+                        onClick={handleChatSeller}
+                      >
+                        Chat Seller
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 text-gray-400 mr-3" />
-                    <div>
-                      <p className="font-medium">Customer Support</p>
-                      <p className="text-sm text-gray-600">24/7 Available</p>
+                ) : (
+                  <div className="w-full space-y-3">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800 text-center">
+                        Please login to rent this equipment
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={() => router.push('/login')}
+                      >
+                        Login to Rent
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        size="lg"
+                        className="w-full"
+                        disabled
+                      >
+                        <Heart className="mr-2 h-4 w-4" />
+                        Add to Wishlist
+                      </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                )}
+              </CardFooter>
+            </Card>
           </div>
         </div>
-      </section>
 
-      {/* Related Equipment */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Equipment Lainnya
-            </h2>
-            <p className="text-gray-600">
-              Peralatan serupa yang mungkin Anda butuhkan
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {/* Related equipment cards would go here */}
-            {[1, 2, 3, 4].map((item) => (
-              <Card key={item} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-gray-100 rounded-t-lg"></div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Equipment {item}</CardTitle>
-                  <CardDescription>Kategori equipment</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold text-green-600">Rp 25,000/hari</p>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Lihat Detail
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <Mountain className="h-8 w-8 text-green-500" />
-                <span className="text-xl font-bold">
-                  <span className="text-green-500">HiLink</span> Adventure
-                </span>
-              </div>
-              <p className="text-gray-400 mb-4">
-                Platform terpercaya untuk open trip dan sewa peralatan outdoor. 
-                Wujudkan petualangan impianmu bersama kami.
+        {/* Equipment Information Tabs */}
+        <div className="space-y-6">
+          {/* Description */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-xl font-semibold flex items-center">
+                <Package className="mr-2 h-5 w-5" />
+                Description
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 leading-relaxed">
+                {equipment.description || 'No description available for this equipment.'}
               </p>
-              <div className="text-sm text-gray-500">
-                © 2025 HiLink Adventure. All rights reserved.
+            </CardContent>
+          </Card>
+
+          {/* Features - Display based on category */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-xl font-semibold flex items-center">
+                <Star className="mr-2 h-5 w-5" />
+                Features
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-2">
+                <div className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <span>High Quality Material</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <span>Weather Resistant</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <span>Lightweight Design</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <span>Easy to Use</span>
+                </div>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Layanan</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/trips" className="hover:text-green-500 transition-colors">Open Trip</Link></li>
-                <li><Link href="/equipment" className="hover:text-green-500 transition-colors">Sewa Alat</Link></li>
-                <li><Link href="/blog" className="hover:text-green-500 transition-colors">Blog</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/contact" className="hover:text-green-500 transition-colors">Kontak</Link></li>
-                <li><Link href="/faq" className="hover:text-green-500 transition-colors">FAQ</Link></li>
-                <li><Link href="/terms" className="hover:text-green-500 transition-colors">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+
+          {/* Specifications */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-xl font-semibold flex items-center">
+                <Shield className="mr-2 h-5 w-5" />
+                Specifications
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Technical Details</h4>
+                <div className="space-y-2 text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Category:</span>
+                    <span className="font-medium">{equipment.category || 'General'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Stock Available:</span>
+                    <span className="font-medium">{equipment.stock_quantity} units</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Daily Rate:</span>
+                    <span className="font-medium">Rp {equipment.rental_price_per_day.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Rental Information */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-xl font-semibold">Rental Information</h3>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Pickup Hours</p>
+                      <p className="text-sm text-gray-600">08:00 - 17:00 WIB</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Pickup Location</p>
+                      <p className="text-sm text-gray-600">HiLink Adventure Store</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Truck className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Delivery Available</p>
+                      <p className="text-sm text-gray-600">Within city limits</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <Shield className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Damage Protection</p>
+                      <p className="text-sm text-gray-600">Included in rental price</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Minimum Rental</p>
+                      <p className="text-sm text-gray-600">1 day</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium">Security Deposit</p>
+                      <p className="text-sm text-gray-600">Required upon pickup</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reviews Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold flex items-center">
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  Reviews ({totalReviews})
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className={`h-4 w-4 ${star <= averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">{averageRating}</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Write Review Form */}
+              {user && (
+                <div className="border-b pb-6">
+                  <h4 className="font-medium mb-4">Write a Review</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">Rating</Label>
+                      <div className="flex items-center space-x-1 mt-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
+                            className="focus:outline-none"
+                          >
+                            <Star 
+                              className={`h-6 w-6 cursor-pointer ${
+                                star <= newReview.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 hover:text-yellow-400'
+                              }`} 
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="review-comment" className="text-sm font-medium">Comment</Label>
+                      <Textarea
+                        id="review-comment"
+                        value={newReview.comment}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                        placeholder="Share your experience with this equipment..."
+                        className="mt-2 min-h-[100px]"
+                      />
+                    </div>
+                    <Button 
+                      onClick={submitReview}
+                      disabled={newReview.rating === 0}
+                      className="w-full sm:w-auto"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Review
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              <div className="space-y-4">
+                {reviews.length > 0 ? (
+                  reviews.map((review) => (
+                    <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          {review.profiles?.avatar_url ? (
+                            <Image
+                              src={review.profiles.avatar_url}
+                              alt={review.profiles.full_name || 'User'}
+                              width={40}
+                              height={40}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-gray-600">
+                              {(review.profiles?.full_name || 'User').charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-sm">{review.profiles?.full_name || 'Anonymous'}</p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3 w-3 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(review.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              <ThumbsUp className="h-3 w-3 mr-1" />
+                              {review.helpful_count}
+                            </Button>
+                          </div>
+                          {review.comment && (
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {review.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No reviews yet. Be the first to review this equipment!</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
-
-export const revalidate = 3600 // Revalidate every hour
