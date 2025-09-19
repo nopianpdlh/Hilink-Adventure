@@ -61,7 +61,7 @@ export default function Sidebar({ className }: SidebarProps) {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md border"
+        className="lg:hidden fixed top-5 left-4 z-50 p-2 bg-white rounded-md shadow-md border"
       >
         {isMobileMenuOpen ? (
           <X className="h-6 w-6" />
@@ -73,7 +73,7 @@ export default function Sidebar({ className }: SidebarProps) {
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-45"
           onClick={closeMobileMenu}
         />
       )}
@@ -81,9 +81,9 @@ export default function Sidebar({ className }: SidebarProps) {
       {/* Sidebar */}
       <aside className={cn(
         "bg-white rounded-lg shadow-sm transition-all duration-300 ease-in-out",
-        "lg:static lg:translate-x-0 lg:w-64",
+        "lg:static lg:translate-x-0 lg:w-64 lg:z-10",
         // Mobile styles
-        "fixed top-0 left-0 bottom-0 w-80 max-w-[80vw] z-50 transform",
+        "fixed top-0 left-0 bottom-0 w-80 max-w-[80vw] z-45 transform",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
         className
       )}>
