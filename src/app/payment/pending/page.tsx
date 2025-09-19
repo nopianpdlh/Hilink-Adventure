@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Clock, ArrowLeft, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import ModernNavbar from '@/components/ModernNavbar'
 
-export default function PaymentPendingPage() {
+function PaymentPendingContent() {
   const searchParams = useSearchParams()
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
@@ -209,4 +209,16 @@ if (typeof window !== 'undefined') {
         .catch(console.error)
     }
   }, 30000) // Check every 30 seconds
+}
+
+export default function PaymentPendingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
+      </div>
+    }>
+      <PaymentPendingContent />
+    </Suspense>
+  )
 }

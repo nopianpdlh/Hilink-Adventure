@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+      },
       fontFamily: {
         // Ganti 'sans' dengan 'inter' jika ingin jadi font default
         'inter': ['Inter', 'sans-serif'],

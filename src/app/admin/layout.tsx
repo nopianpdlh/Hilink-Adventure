@@ -15,7 +15,7 @@ export default async function AdminDashboardLayout({ children }: PropsWithChildr
     return (
         <div className="min-h-screen bg-gray-50">
              {/* Header - Desktop Only */}
-             <header className="hidden lg:block bg-white shadow-sm sticky top-0 z-30 border-b">
+             <header className="hidden lg:block bg-white shadow-sm sticky top-0 z-40 border-b">
                 <nav className="container mx-auto px-4 lg:px-6 py-4 flex justify-between items-center">
                     <Link href="/admin" className="text-xl font-bold text-gray-900">
                         <span className="text-green-600">HiLink</span> Admin
@@ -32,8 +32,8 @@ export default async function AdminDashboardLayout({ children }: PropsWithChildr
             </header>
 
             {/* Mobile Header */}
-            <header className="lg:hidden bg-white shadow-sm sticky top-0 z-30 border-b">
-                <nav className="px-16 py-4 flex justify-between items-center">
+            <header className="lg:hidden bg-white shadow-sm sticky top-0 z-40 border-b">
+                <nav className="pl-16 pr-4 py-4 flex justify-between items-center">
                     <Link href="/admin" className="text-xl font-bold text-gray-900">
                         <span className="text-green-600">HiLink</span> Admin
                     </Link>
@@ -43,13 +43,13 @@ export default async function AdminDashboardLayout({ children }: PropsWithChildr
                 </nav>
             </header>
 
-            <div className="flex min-h-[calc(100vh-64px)]">
+            <div className="flex min-h-[calc(100vh-64px)] overflow-hidden">
                 {/* Sidebar */}
                 <Sidebar />
                 
                 {/* Main Content */}
-                <main className="flex-1 p-4 lg:p-6">
-                    <div className="bg-white rounded-lg shadow-sm min-h-[calc(100vh-120px)] p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 p-4 lg:p-6 min-w-0 overflow-x-hidden">
+                    <div className="bg-white rounded-lg shadow-sm min-h-[calc(100vh-120px)] p-4 sm:p-6 lg:p-8 max-w-full">
                         {children}
                     </div>
                 </main>

@@ -1,171 +1,312 @@
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
+create table public.bookings (
+  id uuid not null default gen_random_uuid (),
+  trip_id uuid null,
+  user_id uuid null,
+  status public.booking_status null,
+  total_participants integer not null,
+  total_price integer not null,
+  created_at timestamp with time zone null default now(),
+  participants_count integer null default 1,
+  duration_days integer null default 1,
+  payment_status public.payment_status null default 'pending'::payment_status,
+  constraint bookings_pkey primary key (id),
+  constraint bookings_trip_id_fkey foreign KEY (trip_id) references trips (id),
+  constraint bookings_user_id_fkey foreign KEY (user_id) references auth.users (id)
+) TABLESPACE pg_default;
 
-CREATE TABLE public.blog_posts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  content text NOT NULL,
-  author_id uuid,
-  published_at timestamp with time zone,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  slug text NOT NULL UNIQUE,
-  CONSTRAINT blog_posts_pkey PRIMARY KEY (id),
-  CONSTRAINT blog_posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.bookings (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  trip_id uuid,
-  user_id uuid,
-  status character varying DEFAULT 'pending'::character varying,
-  total_participants integer NOT NULL,
-  total_price integer NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT bookings_pkey PRIMARY KEY (id),
-  CONSTRAINT bookings_trip_id_fkey FOREIGN KEY (trip_id) REFERENCES public.trips(id),
-  CONSTRAINT bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.destinations (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name character varying NOT NULL,
-  description text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT destinations_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.equipment (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  description text,
-  rental_price_per_day integer NOT NULL CHECK (rental_price_per_day >= 0),
-  stock_quantity integer NOT NULL DEFAULT 0,
-  image_url text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  price_per_day numeric,
-  category character varying,
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT equipment_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.equipment_rentals (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  booking_id uuid NOT NULL,
-  equipment_id uuid NOT NULL,
-  quantity integer NOT NULL CHECK (quantity > 0),
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT equipment_rentals_pkey PRIMARY KEY (id),
-  CONSTRAINT equipment_rentals_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
-  CONSTRAINT equipment_rentals_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.equipment(id)
-);
-CREATE TABLE public.equipment_reviews (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  equipment_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  comment text,
-  helpful_count integer NOT NULL DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT equipment_reviews_pkey PRIMARY KEY (id),
-  CONSTRAINT equipment_reviews_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.equipment(id),
-  CONSTRAINT equipment_reviews_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.equipment_wishlist (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  equipment_id uuid NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT equipment_wishlist_pkey PRIMARY KEY (id),
-  CONSTRAINT equipment_wishlist_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
-  CONSTRAINT equipment_wishlist_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.equipment(id)
-);
-CREATE TABLE public.profiles (
-  id uuid NOT NULL,
-  full_name text,
-  avatar_url text,
-  role character varying DEFAULT 'pelanggan'::character varying CHECK (role::text = ANY (ARRAY['admin'::character varying, 'pelanggan'::character varying, 'tour_leader'::character varying]::text[])),
-  email text,
-  phone text,
-  updated_at timestamp with time zone DEFAULT now(),
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.promotions (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  code text NOT NULL UNIQUE,
-  discount_percentage integer NOT NULL CHECK (discount_percentage > 0 AND discount_percentage <= 100),
-  max_uses integer,
-  expires_at timestamp with time zone,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT promotions_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.reviews (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  trip_id uuid,
-  user_id uuid,
-  rating integer CHECK (rating >= 1 AND rating <= 5),
-  comment text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT reviews_pkey PRIMARY KEY (id),
-  CONSTRAINT reviews_trip_id_fkey FOREIGN KEY (trip_id) REFERENCES public.trips(id),
-  CONSTRAINT reviews_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
-);
-CREATE TABLE public.trip_assignments (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  trip_id uuid NOT NULL,
-  tour_leader_id uuid NOT NULL,
-  role character varying NOT NULL DEFAULT 'leader'::character varying,
-  assigned_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT trip_assignments_pkey PRIMARY KEY (id),
-  CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES public.trips(id),
-  CONSTRAINT fk_tour_leader FOREIGN KEY (tour_leader_id) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.trip_equipment_checklist (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  trip_id uuid NOT NULL,
-  equipment_id uuid NOT NULL,
-  is_required boolean NOT NULL DEFAULT true,
-  notes text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT trip_equipment_checklist_pkey PRIMARY KEY (id),
-  CONSTRAINT trip_equipment_checklist_trip_id_fkey FOREIGN KEY (trip_id) REFERENCES public.trips(id),
-  CONSTRAINT trip_equipment_checklist_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.equipment(id)
-);
-CREATE TABLE public.trip_photos (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  trip_id uuid NOT NULL,
-  filename character varying NOT NULL,
-  url text NOT NULL,
-  caption text,
-  uploaded_by uuid NOT NULL,
-  uploaded_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT trip_photos_pkey PRIMARY KEY (id),
-  CONSTRAINT trip_photos_trip_id_fkey FOREIGN KEY (trip_id) REFERENCES public.trips(id),
-  CONSTRAINT trip_photos_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.profiles(id)
-);
-CREATE TABLE public.trips (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  title character varying NOT NULL,
-  destination_id uuid,
-  description text,
-  start_date date NOT NULL,
-  end_date date NOT NULL,
-  price integer NOT NULL,
-  quota integer NOT NULL,
-  image_url text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT trips_pkey PRIMARY KEY (id),
-  CONSTRAINT trips_destination_id_fkey FOREIGN KEY (destination_id) REFERENCES public.destinations(id)
-);
-CREATE TABLE public.vendors (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  name character varying NOT NULL,
-  category character varying NOT NULL,
-  email character varying,
-  phone character varying,
-  address text,
-  contact_person character varying,
-  rating integer CHECK (rating IS NULL OR rating >= 1 AND rating <= 5),
-  status character varying NOT NULL DEFAULT 'active'::character varying,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT vendors_pkey PRIMARY KEY (id)
-);
+create table public.blog_posts (
+  id uuid not null default gen_random_uuid (),
+  title text not null,
+  content text not null,
+  author_id uuid null,
+  published_at timestamp with time zone null,
+  created_at timestamp with time zone not null default now(),
+  slug text not null,
+  constraint blog_posts_pkey primary key (id),
+  constraint blog_posts_slug_key unique (slug),
+  constraint blog_posts_author_id_fkey foreign KEY (author_id) references profiles (id)
+) TABLESPACE pg_default;
+
+create table public.destinations (
+  id uuid not null default gen_random_uuid (),
+  name character varying(255) not null,
+  description text null,
+  created_at timestamp with time zone null default now(),
+  constraint destinations_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create table public.equipment (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  description text null,
+  rental_price_per_day integer not null,
+  stock_quantity integer not null default 0,
+  image_url text null,
+  created_at timestamp with time zone not null default now(),
+  price_per_day numeric(10, 2) null,
+  category character varying(100) null,
+  updated_at timestamp with time zone null default now(),
+  constraint equipment_pkey primary key (id),
+  constraint equipment_rental_price_per_day_check check ((rental_price_per_day >= 0))
+) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_category on public.equipment using btree (category) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_stock_quantity on public.equipment using btree (stock_quantity) TABLESPACE pg_default;
+
+create table public.equipment_bookings (
+  id uuid not null default gen_random_uuid (),
+  booking_id uuid not null,
+  equipment_id uuid not null,
+  quantity integer not null,
+  created_at timestamp with time zone null default now(),
+  constraint equipment_bookings_pkey primary key (id),
+  constraint equipment_bookings_booking_id_fkey foreign KEY (booking_id) references bookings (id) on delete CASCADE,
+  constraint equipment_bookings_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint equipment_bookings_quantity_check check ((quantity > 0))
+) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_bookings_booking_id on public.equipment_bookings using btree (booking_id) TABLESPACE pg_default;
+
+create table public.equipment_bookings (
+  id uuid not null default gen_random_uuid (),
+  booking_id uuid not null,
+  equipment_id uuid not null,
+  quantity integer not null,
+  created_at timestamp with time zone null default now(),
+  constraint equipment_bookings_pkey primary key (id),
+  constraint equipment_bookings_booking_id_fkey foreign KEY (booking_id) references bookings (id) on delete CASCADE,
+  constraint equipment_bookings_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint equipment_bookings_quantity_check check ((quantity > 0))
+) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_bookings_booking_id on public.equipment_bookings using btree (booking_id) TABLESPACE pg_default;
+
+create table public.equipment_rentals (
+  id uuid not null default gen_random_uuid (),
+  booking_id uuid not null,
+  equipment_id uuid not null,
+  quantity integer not null,
+  created_at timestamp with time zone not null default now(),
+  constraint equipment_rentals_pkey primary key (id),
+  constraint equipment_rentals_booking_id_fkey foreign KEY (booking_id) references bookings (id) on delete CASCADE,
+  constraint equipment_rentals_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint equipment_rentals_quantity_check check ((quantity > 0))
+) TABLESPACE pg_default;
+
+create table public.equipment_reviews (
+  id uuid not null default gen_random_uuid (),
+  equipment_id uuid not null,
+  user_id uuid not null,
+  rating integer not null,
+  comment text null,
+  helpful_count integer not null default 0,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint equipment_reviews_pkey primary key (id),
+  constraint equipment_reviews_unique unique (equipment_id, user_id),
+  constraint equipment_reviews_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint equipment_reviews_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE,
+  constraint equipment_reviews_rating_check check (
+    (
+      (rating >= 1)
+      and (rating <= 5)
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_reviews_equipment_id on public.equipment_reviews using btree (equipment_id) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_reviews_user_id on public.equipment_reviews using btree (user_id) TABLESPACE pg_default;
+
+create table public.equipment_wishlist (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  equipment_id uuid not null,
+  created_at timestamp with time zone not null default now(),
+  constraint equipment_wishlist_pkey primary key (id),
+  constraint equipment_wishlist_unique unique (user_id, equipment_id),
+  constraint equipment_wishlist_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint equipment_wishlist_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_wishlist_user_id on public.equipment_wishlist using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_equipment_wishlist_equipment_id on public.equipment_wishlist using btree (equipment_id) TABLESPACE pg_default;
+
+create table public.payment_transactions (
+  id text not null,
+  booking_id uuid not null,
+  amount integer not null,
+  status public.payment_status null default 'pending'::payment_status,
+  payment_method text null default 'midtrans'::text,
+  transaction_status text null,
+  fraud_status text null,
+  transaction_details jsonb null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint payment_transactions_pkey primary key (id),
+  constraint payment_transactions_booking_id_fkey foreign KEY (booking_id) references bookings (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_transactions_booking_id on public.payment_transactions using btree (booking_id) TABLESPACE pg_default;
+
+create trigger update_payment_transactions_updated_at BEFORE
+update on payment_transactions for EACH row
+execute FUNCTION update_updated_at_column ();
+
+create table public.profiles (
+  id uuid not null,
+  full_name text null,
+  avatar_url text null,
+  role character varying(255) null default 'pelanggan'::character varying,
+  email text null,
+  phone text null,
+  updated_at timestamp with time zone null default now(),
+  created_at timestamp with time zone null default now(),
+  constraint profiles_pkey primary key (id),
+  constraint profiles_id_fkey foreign KEY (id) references auth.users (id) on delete CASCADE,
+  constraint profiles_role_check check (
+    (
+      (role)::text = any (
+        (
+          array[
+            'admin'::character varying,
+            'pelanggan'::character varying,
+            'tour_leader'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_profiles_email on public.profiles using btree (email) TABLESPACE pg_default;
+
+create index IF not exists idx_profiles_phone on public.profiles using btree (phone) TABLESPACE pg_default;
+
+create trigger sync_profile_created_at_trigger BEFORE INSERT
+or
+update on profiles for EACH row
+execute FUNCTION sync_profile_created_at ();
+
+create table public.promotions (
+  id uuid not null default gen_random_uuid (),
+  code text not null,
+  discount_percentage integer not null,
+  max_uses integer null,
+  expires_at timestamp with time zone null,
+  created_at timestamp with time zone not null default now(),
+  constraint promotions_pkey primary key (id),
+  constraint promotions_code_key unique (code),
+  constraint promotions_discount_percentage_check check (
+    (
+      (discount_percentage > 0)
+      and (discount_percentage <= 100)
+    )
+  )
+) TABLESPACE pg_default;
+
+create table public.reviews (
+  id uuid not null default gen_random_uuid (),
+  trip_id uuid null,
+  user_id uuid null,
+  rating integer null,
+  comment text null,
+  created_at timestamp with time zone null default now(),
+  constraint reviews_pkey primary key (id),
+  constraint reviews_user_trip_unique unique (user_id, trip_id),
+  constraint reviews_trip_id_fkey foreign KEY (trip_id) references trips (id),
+  constraint reviews_user_id_fkey foreign KEY (user_id) references auth.users (id),
+  constraint reviews_rating_check check (
+    (
+      (rating >= 1)
+      and (rating <= 5)
+    )
+  )
+) TABLESPACE pg_default;
+
+create table public.trip_assignments (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  trip_id uuid not null,
+  tour_leader_id uuid not null,
+  role character varying(50) not null default 'leader'::character varying,
+  assigned_at timestamp with time zone not null default now(),
+  constraint trip_assignments_pkey primary key (id),
+  constraint uniq_trip_tour unique (trip_id, tour_leader_id),
+  constraint fk_tour_leader foreign KEY (tour_leader_id) references profiles (id) on delete CASCADE,
+  constraint fk_trip foreign KEY (trip_id) references trips (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.trip_equipment_checklist (
+  id uuid not null default gen_random_uuid (),
+  trip_id uuid not null,
+  equipment_id uuid not null,
+  is_required boolean not null default true,
+  notes text null,
+  created_at timestamp with time zone not null default now(),
+  constraint trip_equipment_checklist_pkey primary key (id),
+  constraint trip_equipment_checklist_unique unique (trip_id, equipment_id),
+  constraint trip_equipment_checklist_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint trip_equipment_checklist_trip_id_fkey foreign KEY (trip_id) references trips (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_trip_equipment_checklist_trip_id on public.trip_equipment_checklist using btree (trip_id) TABLESPACE pg_default;
+
+create index IF not exists idx_trip_equipment_checklist_equipment_id on public.trip_equipment_checklist using btree (equipment_id) TABLESPACE pg_default;
+
+create table public.trip_equipment_checklist (
+  id uuid not null default gen_random_uuid (),
+  trip_id uuid not null,
+  equipment_id uuid not null,
+  is_required boolean not null default true,
+  notes text null,
+  created_at timestamp with time zone not null default now(),
+  constraint trip_equipment_checklist_pkey primary key (id),
+  constraint trip_equipment_checklist_unique unique (trip_id, equipment_id),
+  constraint trip_equipment_checklist_equipment_id_fkey foreign KEY (equipment_id) references equipment (id) on delete CASCADE,
+  constraint trip_equipment_checklist_trip_id_fkey foreign KEY (trip_id) references trips (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_trip_equipment_checklist_trip_id on public.trip_equipment_checklist using btree (trip_id) TABLESPACE pg_default;
+
+create index IF not exists idx_trip_equipment_checklist_equipment_id on public.trip_equipment_checklist using btree (equipment_id) TABLESPACE pg_default;
+
+create table public.trips (
+  id uuid not null default gen_random_uuid (),
+  title character varying(255) not null,
+  destination_id uuid null,
+  description text null,
+  start_date date not null,
+  end_date date not null,
+  price integer not null,
+  quota integer not null,
+  image_url text null,
+  created_at timestamp with time zone null default now(),
+  constraint trips_pkey primary key (id),
+  constraint trips_destination_id_fkey foreign KEY (destination_id) references destinations (id)
+) TABLESPACE pg_default;
+
+create table public.vendors (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  name character varying(255) not null,
+  category character varying(100) not null,
+  email character varying(255) null,
+  phone character varying(50) null,
+  address text null,
+  contact_person character varying(255) null,
+  rating integer null,
+  status character varying(20) not null default 'active'::character varying,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  constraint vendors_pkey primary key (id),
+  constraint vendors_rating_check check (
+    (
+      (rating is null)
+      or (
+        (rating >= 1)
+        and (rating <= 5)
+      )
+    )
+  )
+) TABLESPACE pg_default;
