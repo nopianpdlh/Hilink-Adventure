@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import ModernNavbar from '@/components/ModernNavbar'
+import EnhancedHero from '@/components/home/EnhancedHero'
+import SmartSearch from '@/components/home/SmartSearch'
 import { 
   Backpack, 
   Users, 
@@ -310,8 +312,11 @@ export default async function HomePage() {
     <div className="min-h-screen bg-gray-50">
       <ModernNavbar />
       
-      {/* Hero Section */}
-      <HeroSection />
+      {/* Enhanced Hero Section */}
+      <EnhancedHero />
+      
+      {/* Smart Search Section */}
+      <SmartSearch />
       
       {/* Features Section */}
       <FeaturesSection />
