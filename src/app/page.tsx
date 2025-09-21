@@ -7,6 +7,9 @@ import ModernNavbar from '@/components/ModernNavbar'
 import EnhancedHero from '@/components/home/EnhancedHero'
 import SmartSearch from '@/components/home/SmartSearch'
 import FeaturedTrips from '@/components/home/FeaturedTrips'
+import FeaturedEquipment from '@/components/home/FeaturedEquipment'
+import ValuePropositions from '@/components/home/ValuePropositions'
+import TrustCredibility from '@/components/home/TrustCredibility'
 import { 
   Backpack, 
   Users, 
@@ -324,6 +327,15 @@ export default async function HomePage() {
       
       {/* Featured Trips Section */}
       <FeaturedTrips />
+
+      {/* Featured Equipment Section */}
+      <FeaturedEquipment />
+
+      {/* Value Propositions Section */}
+      <ValuePropositions />
+
+      {/* Trust & Credibility Section */}
+      <TrustCredibility />
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-green-600 to-green-700">

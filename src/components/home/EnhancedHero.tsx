@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronDown, Play, Star, Users, MapPin, Calendar, TrendingUp } from 'lucide-react'
+import SmartSearch from './SmartSearch'
 
 export default function EnhancedHero() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
