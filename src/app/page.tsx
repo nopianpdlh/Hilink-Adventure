@@ -4,6 +4,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import ModernNavbar from '@/components/ModernNavbar'
+import EnhancedHero from '@/components/home/EnhancedHero'
+import SmartSearch from '@/components/home/SmartSearch'
+import FeaturedTrips from '@/components/home/FeaturedTrips'
+import FeaturedEquipment from '@/components/home/FeaturedEquipment'
+import ValuePropositions from '@/components/home/ValuePropositions'
+import TrustCredibility from '@/components/home/TrustCredibility'
 import { 
   Backpack, 
   Users, 
@@ -310,54 +316,26 @@ export default async function HomePage() {
     <div className="min-h-screen bg-gray-50">
       <ModernNavbar />
       
-      {/* Hero Section */}
-      <HeroSection />
+      {/* Enhanced Hero Section */}
+      <EnhancedHero />
+      
+      {/* Smart Search Section */}
+      <SmartSearch />
       
       {/* Features Section */}
       <FeaturesSection />
       
       {/* Featured Trips Section */}
-      <section className="py-16 bg-gray-50 relative">
-        <div 
-          className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url(/pattern-bg.png)' }}
-        ></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Open Trip Populer
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Pilihan trip terbaik yang paling diminati oleh para petualang
-            </p>
-          </div>
+      <FeaturedTrips />
 
-          {trips && trips.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                {trips.map((trip) => (
-                  <TripCard key={trip.id} trip={trip as Trip} />
-                ))}
-              </div>
-              
-              <div className="text-center">
-                <Button size="lg" variant="outline" asChild className="border-green-200 hover:bg-green-50">
-                  <Link href="/trips">
-                    Lihat Semua Trip
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <img src="/camp.svg" alt="No trips" className="h-16 w-16 mx-auto mb-4 opacity-30" />
-              <p className="text-xl text-gray-500">Belum ada trip yang tersedia saat ini</p>
-              <p className="text-gray-400 mt-2">Pantau terus untuk update trip terbaru!</p>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Featured Equipment Section */}
+      <FeaturedEquipment />
+
+      {/* Value Propositions Section */}
+      <ValuePropositions />
+
+      {/* Trust & Credibility Section */}
+      <TrustCredibility />
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-green-600 to-green-700">
