@@ -163,8 +163,8 @@ export default function Navbar() {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
                       <AvatarImage 
-                        src={profile?.avatar_url || user.user_metadata?.avatar_url} 
-                        alt={profile?.full_name || user.email || ''} 
+                        src={profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture} 
+                        alt={profile?.full_name || user.user_metadata?.name || user.email || 'User avatar'} 
                       />
                       <AvatarFallback className="bg-green-100 text-green-600">
                         {getUserInitials()}
@@ -176,7 +176,7 @@ export default function Navbar() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {profile?.full_name || 'User'}
+                        {profile?.full_name || user.user_metadata?.name || user.user_metadata?.full_name || 'User'}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
@@ -257,8 +257,8 @@ export default function Navbar() {
                       <div className="flex items-center space-x-3 mb-4">
                         <Avatar className="h-10 w-10">
                           <AvatarImage 
-                            src={profile?.avatar_url || user.user_metadata?.avatar_url} 
-                            alt={profile?.full_name || user.email || ''} 
+                            src={profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture} 
+                            alt={profile?.full_name || user.user_metadata?.name || user.email || 'User avatar'} 
                           />
                           <AvatarFallback className="bg-green-100 text-green-600">
                             {getUserInitials()}
@@ -266,7 +266,7 @@ export default function Navbar() {
                         </Avatar>
                         <div>
                           <p className="font-medium text-gray-900">
-                            {profile?.full_name || 'User'}
+                            {profile?.full_name || user.user_metadata?.name || user.user_metadata?.full_name || 'User'}
                           </p>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>

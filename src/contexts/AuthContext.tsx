@@ -218,13 +218,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null
       }
       
-      // Create profile with basic data
+      // Create profile with basic data (support Google OAuth)
       const newProfile = {
         id: userId,
         email: user.email,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        full_name: user.user_metadata?.full_name || 
+                   user.user_metadata?.name || 
+                   user.email?.split('@')[0] || 
+                   'User',
         role: 'pelanggan' as const,
-        avatar_url: null
+        avatar_url: user.user_metadata?.avatar_url || 
+                    user.user_metadata?.picture || 
+                    null
       }
       
       const { data: createdProfile, error: createError } = await supabase
