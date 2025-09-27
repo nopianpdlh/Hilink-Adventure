@@ -24,7 +24,8 @@ import {
   Info,
   AlertCircle,
   Check,
-  X
+  X,
+  Chrome
 } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -171,6 +172,38 @@ export default function RegisterPage() {
     }
 
     return true
+  }
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true)
+    setError('')
+    
+    try {
+      console.log('🔐 Attempting Google Sign Up/In...')
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      })
+      
+      if (error) {
+        console.error('❌ Google Sign In error:', error)
+        setError(`Daftar dengan Google gagal: ${error.message}`)
+        setLoading(false)
+      }
+      // Note: If successful, user will be redirected to Google OAuth page
+      // so we don't need to handle success case here
+    } catch (err) {
+      console.error('💥 Google Sign In failed:', err)
+      setError('Terjadi kesalahan saat daftar dengan Google')
+      setLoading(false)
+    }
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -350,6 +383,32 @@ export default function RegisterPage() {
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
+
+            {/* Google Sign Up Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Chrome className="mr-2 h-5 w-5 text-blue-500" />
+              )}
+              {loading ? 'Menghubungkan...' : 'Daftar dengan Google'}
+            </Button>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Atau daftar dengan email</span>
+              </div>
+            </div>
 
             <form onSubmit={handleRegister} className="space-y-5">
               {/* Full Name */}
